@@ -2,38 +2,41 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { validationResult } = require('express-validator');
 const User = require('../models/User');
+const { logActivity } = require('../utils/activityLogger');
 
 // Register
 const register = async (req, res) => {
-  // ✅ Check validation errors
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({
-      message: errors.array()[0].msg
-    });
+    return res.status(400).json({ message: errors.array()[0].msg });
   }
 
   const { username, email, masterPassword } = req.body;
 
   try {
-    // ✅ Check if user exists
     const existingUser = await User.findOne({ email: email.toLowerCase() });
     if (existingUser) {
       return res.status(400).json({ message: 'Account already exists with this email' });
     }
 
-    // ✅ Hash with bcrypt salt 12
     const salt = await bcrypt.genSalt(12);
     const hashedPassword = await bcrypt.hash(masterPassword, salt);
 
-    // ✅ Create user
     const user = await User.create({
       username: username.trim(),
       email: email.toLowerCase().trim(),
       masterPassword: hashedPassword
     });
 
-    // ✅ Sign JWT
+    // ✅ Log registration
+    await logActivity({
+      userId: user._id,
+      action: 'REGISTER',
+      req,
+      details: `New account created for ${email}`,
+      status: 'SUCCESS'
+    });
+
     const token = jwt.sign(
       { id: user._id },
       process.env.JWT_SECRET,
@@ -56,30 +59,53 @@ const register = async (req, res) => {
 
 // Login
 const login = async (req, res) => {
-  // ✅ Check validation errors
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    return res.status(400).json({
-      message: errors.array()[0].msg
-    });
+    return res.status(400).json({ message: errors.array()[0].msg });
   }
 
   const { email, masterPassword } = req.body;
 
   try {
-    // ✅ Find user — don't reveal if email exists or not (security best practice)
     const user = await User.findOne({ email: email.toLowerCase() });
+
     if (!user) {
+      // ✅ Log failed attempt even if user doesn't exist
+      await logActivity({
+        userId: '000000000000000000000000', // placeholder
+        action: 'LOGIN_FAILED',
+        req,
+        details: `Failed login attempt for ${email}`,
+        status: 'FAILED'
+      }).catch(() => {}); // Silent fail
+
       return res.status(400).json({ message: 'Invalid email or password' });
     }
 
-    // ✅ Compare password
     const isMatch = await bcrypt.compare(masterPassword, user.masterPassword);
+
     if (!isMatch) {
+      // ✅ Log failed login
+      await logActivity({
+        userId: user._id,
+        action: 'LOGIN_FAILED',
+        req,
+        details: `Wrong password attempt for ${email}`,
+        status: 'FAILED'
+      });
+
       return res.status(400).json({ message: 'Invalid email or password' });
     }
 
-    // ✅ Sign JWT
+    // ✅ Log successful login
+    await logActivity({
+      userId: user._id,
+      action: 'LOGIN_SUCCESS',
+      req,
+      details: `Successful login`,
+      status: 'SUCCESS'
+    });
+
     const token = jwt.sign(
       { id: user._id },
       process.env.JWT_SECRET,
