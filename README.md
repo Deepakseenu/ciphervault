@@ -54,41 +54,42 @@ A full-stack, production-grade password manager built with military-grade AES-25
 ---
 
 ## 📁 Project Structure
+
+```
 ciphervault/
 ├── backend/
 │   ├── config/
-│   │   └── db.js                 # MongoDB connection
+│   │   └── db.js
 │   ├── controllers/
-│   │   ├── authController.js     # Register & Login logic
-│   │   └── passwordController.js # CRUD + encryption
+│   │   ├── authController.js
+│   │   └── passwordController.js
 │   ├── middleware/
-│   │   ├── authMiddleware.js     # JWT verification
-│   │   └── validators.js         # Input validation rules
+│   │   ├── authMiddleware.js
+│   │   └── validators.js
 │   ├── models/
-│   │   ├── User.js               # User schema
-│   │   └── Password.js           # Password entry schema
+│   │   ├── User.js
+│   │   └── Password.js
 │   ├── routes/
-│   │   ├── authRoutes.js         # /api/auth/*
-│   │   └── passwordRoutes.js     # /api/passwords/*
+│   │   ├── authRoutes.js
+│   │   └── passwordRoutes.js
 │   ├── utils/
-│   │   └── encryption.js         # AES-256 encrypt/decrypt
-│   ├── .env.example              # Environment variables template
-│   └── server.js                 # Express app entry point
+│   │   └── encryption.js
+│   ├── .env.example
+│   └── server.js
 │
 └── frontend/
-└── src/
-├── context/
-│   └── AuthContext.jsx   # Global auth state
-├── pages/
-│   ├── Login.jsx         # Login screen
-│   ├── Register.jsx      # Register screen
-│   └── Vault.jsx         # Password vault dashboard
-├── services/
-│   └── api.js            # Axios API calls
-├── App.jsx               # Routes + Protected routes
-└── main.jsx              # React entry point
-
----
+    └── src/
+        ├── context/
+        │   └── AuthContext.jsx
+        ├── pages/
+        │   ├── Login.jsx
+        │   ├── Register.jsx
+        │   └── Vault.jsx
+        ├── services/
+        │   └── api.js
+        ├── App.jsx
+        └── main.jsx
+```
 
 ## ⚙️ Getting Started
 
