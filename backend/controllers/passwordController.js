@@ -290,6 +290,49 @@ const checkBreach = async (req, res) => {
   }
 };
 
+// ✅ Encrypted vault export
+const exportVault = async (req, res) => {
+  try {
+    const passwords = await Password.find({ userId: req.user.id });
+    const decrypted = passwords.map(p => ({
+      siteName: p.siteName,
+      siteUrl: p.siteUrl,
+      username: p.username,
+      password: decrypt(p.encryptedPassword),
+      category: p.category,
+      notes: p.notes,
+      createdAt: p.createdAt
+    }));
+
+    // Re-encrypt entire vault as one blob
+    const vaultData = JSON.stringify({
+      exportedAt: new Date().toISOString(),
+      exportedBy: req.user.id,
+      totalEntries: decrypted.length,
+      entries: decrypted
+    });
+
+    const encryptedVault = encrypt(vaultData);
+
+    await logActivity({
+      userId: req.user.id,
+      action: 'PASSWORD_VIEWED',
+      req,
+      details: `Vault exported — ${decrypted.length} entries`,
+      status: 'SUCCESS'
+    });
+
+    res.json({
+      message: '✅ Vault exported successfully',
+      encrypted: encryptedVault,
+      totalEntries: decrypted.length,
+      exportedAt: new Date().toISOString(),
+      warning: '⚠️ Keep this file safe — it contains your encrypted passwords'
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Export failed', error: err.message });
+  }
+};
 module.exports = {
   getPasswords,
   addPassword,
@@ -298,5 +341,6 @@ module.exports = {
   createShareLink,
   accessShareLink,
   getActivityLogs,
-  checkBreach
+  checkBreach,
+  exportVault
 };
